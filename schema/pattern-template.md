@@ -22,7 +22,7 @@ summary: <one sentence>
 
 ## Golden Pattern
 
-```tsx
+```<language>
 // canonical implementation
 ```
 
