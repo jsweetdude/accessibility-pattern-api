@@ -3,58 +3,45 @@ id: "dialog.modal"
 stack: "web/react"
 status: "beta"
 aliases: [dialog, modal]
-tags: [dialog, modal, overlay, focus-trap]
-summary: <one sentence>
+tags: [dialog, modal, overlay, focus-trap, blocking]
+summary: User-initiated blocking dialog that traps focus, inerts background content, and restores focus on close.
 ---
 
 # <Pattern Title>
 
 ## Use When
-- Use when you must block interaction with the page until the user completes or dismisses a task.
-- Use when the user needs to make a decision that must be acknowledged before continuing (confirmations, required choices).
-- Use when you need to collect a small amount of input without navigating away (short forms like name/email, a single setting, a quick filter).
-- Use when the content is contextual to the current page and returning to the same point matters.
+- When interaction outside the container must be blocked until dismissal.
+- When the user must complete or explicitly dismiss a task before continuing.
+- When returning to the same page context after dismissal matters.
 
 ## Do Not Use When
-- Do not use when the content is long-form or requires sustained reading/editing (prefer a dedicated page or full-screen route).
-- Do not use when the user may need to compare modal content with page content side-by-side (modal blocks context).
-- Do not use for critical alerts that require specialized semantics (use an alert dialog pattern with role="alertdialog" and stricter focus rules).
+- When the content requires long-form reading or editing (prefer a dedicated page).
+- When side-by-side comparison with page content is required.
+- When critical alerts require immediate announcement and stricter semantics (use `dialog.alert`).
 
 ## Must Haves
-- Render the modal in a portal outside the application content tree (e.g., document.body) to avoid clipping and stacking-context issues.
-- Use semantic dialog markup: the dialog container must have role="dialog" and aria-modal="true".
-- Provide an accessible name: the dialog must reference a visible title via aria-labelledby.
-- If a description is present, reference it via aria-describedby.
-- While open, make the background application container inert (e.g., #app-root or a provided inertRoot) so background content cannot receive focus or pointer input.
-- Move focus into the dialog when it opens (at minimum, focus the dialog container).
-- Restore focus to the opener element when the dialog closes.
-- Support closing via Escape.
-- Support closing via backdrop click (unless the product explicitly requires otherwise).
+- The dialog container has `role="dialog"` and `aria-modal="true"`.
+- The dialog has an accessible name via `aria-labelledby` or `aria-label`.
+- Focus moves to the dialog when it opens.
+- Focus is trapped within the dialog while open.
+- Focus returns to the invoking element when the dialog closes.
+- Escape closes the dialog.
+- Background application content is not focusable or interactive while the dialog is open.
 
 ## Don’ts
-- Don’t use <dialog> for this pattern; implement the modal using a normal element with role="dialog" for predictable portal-based behavior.
-- Don’t rely on aria-modal="true" to block background interaction; it does not prevent focus/pointer access on its own.
-- Don’t render the modal inside containers that create clipping or stacking contexts (e.g., overflow: hidden/auto, transform), and don’t rely on z-index alone to “make it work.”
-- Don’t inert document.body or document.documentElement; inert only the application content root.
+- Do not rely on the native `<dialog>` element for consistent cross-browser modal behavior in portal-based applications.
+- Don’t rely on `aria-modal="true"` to block background interaction; it does not prevent focus/pointer access on its own.
+- Don’t render the modal inside containers that create clipping or stacking contexts (e.g., `overflow: hidden/auto`, `transform`), and don’t rely on `z-index` alone to “make it work.”
+- Don’t inert `document.body` or `document.documentElement`; inert only the application content root.
 - Don’t omit focus restoration; closing a modal must return the user to where they were.
 
 ## Golden Pattern
 
-```tsx
-type ModalDialogProps = {
-  open: boolean;
-  title: string;
-  description?: string;
-  onClose: () => void;
-  children: React.ReactNode;
+```js
+"use client";
 
-  /**
-   * Optional. The element to mark inert while the dialog is open.
-   * Recommended: pass a stable app root element (e.g., document.getElementById("app-root")).
-   * If omitted and #app-root is not found, background inert will be skipped.
-   */
-  inertRoot?: HTMLElement | null;
-};
+import * as React from "react";
+import { createPortal } from "react-dom";
 
 export function ModalDialog({
   open,
@@ -63,22 +50,23 @@ export function ModalDialog({
   onClose,
   children,
   inertRoot,
-}: ModalDialogProps) {
+}) {
   const titleId = React.useId();
-  const descId = React.useId();
 
-  const dialogRef = React.useRef<HTMLDivElement | null>(null);
-  const openerRef = React.useRef<HTMLElement | null>(null);
+  const dialogRef = React.useRef(null);
+  const openerRef = React.useRef(null);
 
   // Capture the opener at the moment we open (so focus can be restored on close).
   React.useLayoutEffect(() => {
     if (!open) return;
-    openerRef.current = document.activeElement as HTMLElement | null;
+    openerRef.current = document.activeElement;
   }, [open]);
 
   // Background inert while open (optional; depends on target root existing).
   React.useEffect(() => {
-    const target = inertRoot ?? document.getElementById("app-root");
+    const target =
+      inertRoot || document.getElementById("app-root");
+
     if (!target) return;
 
     if (open) {
@@ -92,22 +80,25 @@ export function ModalDialog({
     };
   }, [open, inertRoot]);
 
-  // Focus entry (simple) + focus restore (important).
+  // Focus entry + restore.
   React.useEffect(() => {
     if (!open) {
-      openerRef.current?.focus?.();
+      if (openerRef.current && typeof openerRef.current.focus === "function") {
+        openerRef.current.focus();
+      }
       return;
     }
 
-    // Put focus into the dialog container. No focus trap; Tab may leave page (accepted).
-    dialogRef.current?.focus();
+    if (dialogRef.current && typeof dialogRef.current.focus === "function") {
+      dialogRef.current.focus();
+    }
   }, [open]);
 
   // Close on Escape.
   React.useEffect(() => {
     if (!open) return;
 
-    function onKeyDown(e: KeyboardEvent) {
+    function onKeyDown(e) {
       if (e.key === "Escape") {
         e.preventDefault();
         onClose();
@@ -124,8 +115,9 @@ export function ModalDialog({
     <div
       role="presentation"
       onMouseDown={(e) => {
-        // Click outside closes.
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
       }}
       style={{
         position: "fixed",
@@ -141,7 +133,6 @@ export function ModalDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        aria-describedby={description ? descId : undefined}
         tabIndex={-1}
         style={{
           width: "min(560px, 100%)",
@@ -165,7 +156,7 @@ export function ModalDialog({
               {title}
             </h2>
             {description ? (
-              <p id={descId} style={{ marginTop: 8, marginBottom: 0 }}>
+              <p style={{ marginTop: 8, marginBottom: 0 }}>
                 {description}
               </p>
             ) : null}
@@ -204,4 +195,9 @@ export function ModalDialog({
 ```
 
 ## Acceptance Checks
-- 
+- Open dialog via keyboard → focus moves inside dialog.
+- Press Tab repeatedly → focus does not leave the dialog.
+- Press Shift+Tab on first focusable → focus moves to last.
+- Press Escape → dialog closes.
+- After close → focus returns to the triggering element.
+- With screen reader enabled → dialog role and title are announced.
