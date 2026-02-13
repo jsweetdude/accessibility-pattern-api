@@ -1,0 +1,11 @@
+{
+  "stack": "web/react",
+  "patterns": [
+    {
+      "id": "dialog.modal",
+      "title": "Modal Dialog",
+      "tags": ["dialog", "modal"],
+      "status": "stable"
+    }
+  ]
+}
