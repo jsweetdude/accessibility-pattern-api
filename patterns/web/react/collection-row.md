@@ -12,33 +12,38 @@ summary: Horizontal product shelf with a heading, list semantics, and Prev/Next 
 ## Use When
 - Use when presenting a category of related items in a single horizontal strip (e.g., “Customers Also Viewed”, “Action Movies”, “Related Products”).
 - Use when each item is a single destination (image + text as one link).
-- Use when keyboard users should be able to move past the row without tabbing through an unbounded number of items.
 
 ## Do Not Use When
 - Do not use when users must compare many items at once (use a grid/list page).
 - Do not use when items require multiple interactive controls per card (use a different “card grid” pattern).
-- Do not use when you cannot provide deterministic focus behavior for Next/Prev paging.
 
 ## Must Haves
 - Wrap the component in a container with `role="group"` and `aria-labelledby` pointing to the heading ID.
 - Use a visible heading, typically an `<h2>`, above the row.
 - Use list semantics for the row: `ul` with `li` items.
-- Each item must be a single link that contains:
+- Each item must be a single link `<a>` that contains:
   - the product image
   - a title (visible)
   - metadata (visible; e.g., price)
 - Each item must expose position information (e.g., “3 of 18”) via an offscreen element included in the link’s accessible name.
-- Provide a Next button at the right edge of the row container (vertically centered).
-  - On activation, scroll/paginate forward by a fixed “page” and move focus to the first newly revealed item.
-- When not on the first page, provide a Previous button at the left edge.
-  - On activation, scroll/paginate backward and move focus to the last newly revealed item.
-- Buttons must be reachable by Tab and operable with Enter/Space.
+- Each item link must have an accessible name composed of:
+  - title + metadata via `aria-labelledby`
+- Each item link must include position context as supplemental information:
+  - an offscreen “X of Y” element referenced via `aria-describedby`
+  - the “X of Y” string must reflect the item’s position in the full set, not just the current visible set of items
+- Provide paging controls:
+  - Next button on the right edge of the row container (vertically centered)
+  - Previous button on the left edge when not on the first page
+- Paging focus behavior:
+  - Activating Next moves focus to the first newly revealed item (left-most visible link)
+  - Activating Previous moves focus to the last newly revealed item (right-most visible link)
 
 ## Don’ts
-- Don’t auto-scroll the row when a user Tabs to the last visible item.
-- Don’t hide focus or rely on hover-only affordances.
-- Don’t place multiple separate links/buttons inside each item in this basic pattern.
-- Don’t use roving tabindex or arrow-key navigation for items in this variant.
+- Don’t auto-scroll/paginate when the user Tabs from the last visible item.
+- Don’t use `role="tablist"` / `role="tab"` for item navigation in this pattern.
+- Don’t add roving tabindex or require arrow-key navigation between items.
+- Don’t split the item into multiple separate interactive elements (one item = one link).
+- Don’t include “X of Y” in both the accessible name and description (avoid duplicate announcements).
 
 ## Golden Pattern
 ```js
@@ -130,18 +135,6 @@ export function CollectionRow({
         </button>
       ) : null}
 
-      {canGoNext ? (
-        <button
-          ref={nextButtonRef}
-          type="button"
-          onClick={goNext}
-          aria-label="Next items"
-          style={edgeButtonStyle("right")}
-        >
-          ›
-        </button>
-      ) : null}
-
       <ul
         style={{
           listStyle: "none",
@@ -165,7 +158,8 @@ export function CollectionRow({
                 ref={(el) => {
                   itemLinkRefs.current[localIndex] = el;
                 }}
-                aria-labelledby={`${titleId} ${posId} ${metaId}`}
+                aria-labelledby={`${titleId} ${metaId}`}
+                aria-describedby={posId}
                 style={{
                   display: "grid",
                   gap: 8,
@@ -200,10 +194,10 @@ export function CollectionRow({
                     }}
                   >
                     {item.title}{" "}
+                  </div>
                     <span id={posId} style={srOnlyStyle}>
                       {globalIndex + 1} of {total}
                     </span>
-                  </div>
 
                   <div id={metaId} style={{ color: "rgba(0,0,0,0.75)" }}>
                     {item.meta}
@@ -214,6 +208,18 @@ export function CollectionRow({
           );
         })}
       </ul>
+
+      {canGoNext ? (
+        <button
+          ref={nextButtonRef}
+          type="button"
+          onClick={goNext}
+          aria-label="Next items"
+          style={edgeButtonStyle("right")}
+        >
+          ›
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -335,14 +341,63 @@ const DEFAULT_ITEMS = [
     href: "#",
     image: "https://picsum.photos/seed/bottle-12/400/400",
   },
+  {
+    id: "wb-13",
+    title: "Summit Straw Bottle",
+    meta: "$26.40",
+    href: "#",
+    image: "https://picsum.photos/seed/bottle-13/400/400",
+  },
+  {
+    id: "wb-14",
+    title: "Metro Leakproof Flask",
+    meta: "$28.10",
+    href: "#",
+    image: "https://picsum.photos/seed/bottle-14/400/400",
+  },
+  {
+    id: "wb-15",
+    title: "RidgeRunner Sport Bottle",
+    meta: "$23.75",
+    href: "#",
+    image: "https://picsum.photos/seed/bottle-15/400/400",
+  },
+  {
+    id: "wb-16",
+    title: "EcoPress Glass Tumbler",
+    meta: "$20.50",
+    href: "#",
+    image: "https://picsum.photos/seed/bottle-16/400/400",
+  },
+  {
+    id: "wb-17",
+    title: "ArcticLock Thermal Bottle",
+    meta: "$33.20",
+    href: "#",
+    image: "https://picsum.photos/seed/bottle-17/400/400",
+  },
+  {
+    id: "wb-18",
+    title: "Voyager Daily Hydration Kit",
+    meta: "$36.00",
+    href: "#",
+    image: "https://picsum.photos/seed/bottle-18/400/400",
+  },
 ];
 ```
 
 ## Acceptance Checks
-- Heading is an <h2> and the container uses role="group" with aria-labelledby pointing to the heading.
-- The row uses ul/li structure.
-- Each item is a single link containing image + title + price.
-- Each item’s accessible name includes title + “X of Y” + price via aria-labelledby.
-- Tab order: user can reach Previous/Next controls without tabbing through unseen items.
-- Activating Next moves focus to the first newly revealed item.
-- Activating Previous moves focus to the last newly revealed item.
+- Structure:
+  - The heading is an `<h2>` and is referenced by the container `aria-labelledby`.
+  - The row uses `ul`/`li`.
+  - Each list item contains one link wrapping image + title + metadata.
+- Accessible naming:
+  - Link name includes title and metadata (e.g., “Superflo Water Bottle $24.95”).
+  - Link description includes “X of Y” announced once (e.g., “1 of 18”).
+- Keyboard:
+  - Tab order reaches Previous/Next buttons without forcing navigation through hidden items.
+  - Next button activates and focus lands on the first newly visible item.
+  - Previous button activates and focus lands on the last newly visible item.
+  - No automatic paging occurs from Tab alone.
+- Screen reader:
+  - When moving pages, users can orient quickly because the focused link announces its “X of Y” via `aria-describedby`.
