@@ -50,7 +50,7 @@ export function CarouselDotsDemo({
   ariaLabel = "Featured content",
   items = DEFAULT_ITEMS,
   autoplay = true,
-  intervalMs = 6000,
+  intervalMs = 5000,
 }) {
   const [index, setIndex] = React.useState(0);
   const [isPaused, setIsPaused] = React.useState(false);
@@ -184,7 +184,7 @@ export function CarouselDotsDemo({
           position: "relative",
           overflow: "hidden",
           borderRadius: 12,
-          minHeight: 320,
+          minHeight: 400,
           background: "#000",
         }}
       >
@@ -211,8 +211,8 @@ export function CarouselDotsDemo({
             display: "grid",
             gridTemplateColumns: "1fr",
             alignItems: "end",
-            minHeight: 320,
-            padding: "16px 72px",
+            minHeight: 400,
+            padding: "16px 72px 40px",
             backgroundImage: active.image ? `url(${active.image})` : undefined,
             backgroundSize: "cover",
             backgroundPosition: "center",
@@ -358,19 +358,19 @@ const DEFAULT_ITEMS = [
     title: "Neighbors",
     description: "A chaotic dispute spirals. Watch the latest episode now.",
     href: "#",
-    image: "",
+    image: "https://picsum.photos/seed/hero-1/1200/600",
   },
   {
     title: "UCLA at Michigan",
     description: "Tip-off at 12:45 PM ET. Catch it live.",
     href: "#",
-    image: "",
+    image: "https://picsum.photos/seed/hero-2/1200/600",
   },
   {
     title: "Fire Country",
     description: "A risky mission tests loyalties and nerves.",
     href: "#",
-    image: "",
+    image: "https://picsum.photos/seed/hero-3/1200/600",
   },
 ];
 ```
