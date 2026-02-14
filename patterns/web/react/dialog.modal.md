@@ -1,7 +1,7 @@
 ---
-id: "dialog.modal"
-stack: "web/react"
-status: "beta"
+id: dialog.modal
+stack: web/react
+status: beta
 aliases: [dialog, modal]
 tags: [dialog, modal, overlay, focus-trap, blocking]
 summary: User-initiated blocking dialog that traps focus, inerts background content, and restores focus on close.
